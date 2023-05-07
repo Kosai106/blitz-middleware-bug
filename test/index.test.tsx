@@ -2,35 +2,42 @@
  * @vitest-environment jsdom
  */
 
- import { expect, vi, test } from "vitest"
- import { render } from "test/utils"
+import { expect, vi, test } from "vitest"
+import { useSession } from "@blitzjs/auth"
 
- import Home from "../src/pages/index"
+import Home from "src/pages/index"
+import { useCurrentUser } from "src/users/hooks/useCurrentUser"
 
- vi.mock("public/logo.png", () => ({
-   default: {src: "/logo.png"}
- }))
+import { render } from "test/utils"
 
+vi.mock("@blitzjs/auth")
+vi.mock("src/users/hooks/useCurrentUser")
 
- test.skip("renders blitz documentation link", () => {
-   // This is an example of how to ensure a specific item is in the document
-   // But it's disabled by default (by test.skip) so the test doesn't fail
-   // when you remove the default content from the page
+test("renders sign up button when not logged in", () => {
+  vi.mocked(useSession).mockReturnValue({
+    userId: null,
+    isLoading: false,
+  })
+  vi.mocked(useCurrentUser).mockReturnValue(null)
 
-   // This is an example on how to mock api hooks when testing
-   vi.mock("src/users/hooks/useCurrentUser", () => (
-    {
-      useCurrentUser: () => ({
-        id: 1,
-        name: "User",
-        email: "user@email.com",
-        role: "user",
-      })
-    }
-  ))
+  const view = render(<Home users={[]} />)
 
-   const { getByText } = render(<Home />)
-   const linkElement = getByText(/Blitz Docs/i)
-   expect(linkElement).toBeInTheDocument()
- })
+  expect(view.getByText(/sign up/i)).toBeInTheDocument()
+})
 
+test("renders logout button when logged in", () => {
+  vi.mocked(useSession).mockReturnValue({
+    userId: 1,
+    isLoading: false,
+  })
+  vi.mocked(useCurrentUser).mockReturnValue({
+    id: 1,
+    name: "User",
+    role: "USER",
+    email: "user@email.com",
+  })
+
+  const view = render(<Home users={[]} />)
+
+  expect(view.getByText(/logout/i)).toBeInTheDocument()
+})
